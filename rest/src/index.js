@@ -28,6 +28,7 @@ const fs = require('fs');
 const messageFormattingRules = require('./server/messageFormattingRules');
 const routeSystem = require('./plugins/routeSystem');
 const winston = require('winston');
+const waitPort = require('wait-port');
 const { createConnection } = require('net');
 const { createConnectionService } = require('./connection/connectionService');
 const { createZmqConnectionService } = require('./connection/zmqService');
@@ -155,9 +156,19 @@ const registerRoutes = (server, db, services) => {
 			const connectionService = createConnectionService(config, createConnection, catapult.auth.createAuthPromise, winston.verbose);
 			registerRoutes(server, db, { codec: serverAndCodec.codec, config, connectionService });
 
-			connectionService.lease().then(() => {
-				winston.info(`listening on port ${config.port}`);
-				server.listen(config.port);
+			waitPort({
+				host: config.apiNode.host,
+				port: config.apiNode.port,
+				timeout: 30000,
+			}).then((open) => {
+				if (open) {
+					connectionService.lease().then(() => {
+						winston.info(`listening on port ${config.port}`);
+						server.listen(config.port);
+					})
+				} else {
+					winston.error('Failed to connect to API node');
+				}
 			})
 		})
 		.catch(err => {

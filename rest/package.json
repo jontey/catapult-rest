@@ -43,6 +43,7 @@
     "nyc": "^11.8.0",
     "restify": "^6.3.4",
     "restify-errors": "^6.0.0",
+    "wait-port": "^0.2.2",
     "winston": "^2.4.0",
     "ws": "^4.1.0",
     "zeromq": "^4.6.0"
