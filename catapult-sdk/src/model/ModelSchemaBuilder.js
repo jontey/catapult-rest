@@ -48,7 +48,9 @@ class ModelSchemaBuilder {
 				difficulty: ModelType.uint64,
 				previousBlockHash: ModelType.binary,
 				blockTransactionsHash: ModelType.binary,
-				stateHash: ModelType.binary
+				blockReceiptsHash: ModelType.binary,
+				stateHash: ModelType.binary,
+				beneficiary: ModelType.binary
 			},
 			blockHeaderMetadata: {
 				hash: ModelType.binary,
@@ -73,7 +75,7 @@ class ModelSchemaBuilder {
 
 			transaction: {
 				deadline: ModelType.uint64,
-				fee: ModelType.uint64
+				maxFee: ModelType.uint64
 			},
 			transactionMetadata: {
 				aggregateHash: ModelType.binary,
@@ -149,6 +151,9 @@ class ModelSchemaBuilder {
 			},
 			nodeTime: {
 				communicationTimestamps: { type: ModelType.object, schemaName: 'communicationTimestamps' }
+			},
+
+			serverInfo: {
 			},
 
 			storageInfo: {

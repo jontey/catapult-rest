@@ -18,24 +18,18 @@
  * along with Catapult.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-const routeResultTypes = require('../../src/routes/routeResultTypes');
-const { expect } = require('chai');
+/** @module plugins/empty */
 
-describe('routeResultTypes', () => {
-	it('has correct links to schema', () => {
-		expect(Object.keys(routeResultTypes).length).to.equal(11);
-		expect(routeResultTypes).to.deep.equal({
-			account: 'accountWithMetadata',
-			block: 'blockHeaderWithMetadata',
-			transaction: 'transactionWithMetadata',
-			chainInfo: 'chainInfo',
-			merkleProofInfo: 'merkleProofInfo',
-			receipts: 'receipts',
-			transactionStatus: 'transactionStatus',
-			nodeInfo: 'nodeInfo',
-			nodeTime: 'nodeTime',
-			serverInfo: 'serverInfo',
-			storageInfo: 'storageInfo'
-		});
-	});
-});
+/**
+ * Creates an accountLink plugin.
+ * @type {module:plugins/CatapultRestPlugin}
+ */
+module.exports = {
+	createDb: () => undefined,
+
+	registerTransactionStates: () => {},
+
+	registerMessageChannels: () => {},
+
+	registerRoutes: () => {}
+};

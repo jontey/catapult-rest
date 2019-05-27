@@ -37,7 +37,7 @@ describe('receipts plugin', () => {
 			const modelSchema = builder.build();
 
 			// Assert:
-			expect(Object.keys(modelSchema).length).to.equal(numDefaultKeys + 10);
+			expect(Object.keys(modelSchema).length).to.equal(numDefaultKeys + 11);
 			expect(modelSchema).to.contain.all.keys([
 				'receipts',
 				'receipts.addressResolutionStatement',
@@ -46,6 +46,7 @@ describe('receipts plugin', () => {
 				'receipts.balanceChange',
 				'receipts.balanceTransfer',
 				'receipts.artifactExpiry',
+				'receipts.inflation',
 				'receipts.entry.address',
 				'receipts.entry.mosaic',
 				'receipts.unknown'
@@ -64,7 +65,7 @@ describe('receipts plugin', () => {
 			expect(modelSchema['receipts.addressResolutionStatement']).to.contain.all.keys([
 				'height',
 				'unresolved',
-				'entries'
+				'resolutionEntries'
 			]);
 
 			// - receipts.mosaicResolutionStatement
@@ -72,7 +73,7 @@ describe('receipts plugin', () => {
 			expect(modelSchema['receipts.mosaicResolutionStatement']).to.contain.all.keys([
 				'height',
 				'unresolved',
-				'entries'
+				'resolutionEntries'
 			]);
 
 			// - receipts.transactionStatement
@@ -111,10 +112,18 @@ describe('receipts plugin', () => {
 			expect(Object.keys(modelSchema['receipts.artifactExpiry']).length).to.equal(1);
 			expect(modelSchema['receipts.artifactExpiry']).to.contain.all.keys(['artifactId']);
 
+			// - receipts.inflation
+			expect(Object.keys(modelSchema['receipts.inflation']).length).to.equal(2);
+			expect(modelSchema['receipts.inflation']).to.contain.all.keys([
+				'mosaicId',
+				'amount'
+			]);
+
 			// - receipts.unknown
 			expect(Object.keys(modelSchema['receipts.unknown']).length).to.equal(0);
 		});
 	});
+
 
 	describe('conditional schema', () => {
 		describe('uses the correct conditional schema depending on receipt type', () => {
@@ -215,6 +224,27 @@ describe('receipts plugin', () => {
 					'version',
 					'type',
 					'artifactId'
+				]);
+			});
+
+			it('formats inflation receipt type', () => {
+				// Arrange:
+				const inflationReceipt = {
+					version: 1,
+					type: 0x5000,
+					mosaicId: null,
+					amount: null
+				};
+
+				// Act:
+				const formattedReceipt = formatReceipt(inflationReceipt);
+
+				// Assert:
+				expect(formattedReceipt).to.contain.all.keys([
+					'version',
+					'type',
+					'mosaicId',
+					'amount'
 				]);
 			});
 

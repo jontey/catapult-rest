@@ -18,17 +18,15 @@
  * along with Catapult.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-const catapult = require('catapult-sdk');
 const dbFacade = require('../../routes/dbFacade');
 const errors = require('../../server/errors');
 const routeResultTypes = require('../../routes/routeResultTypes');
 const routeUtils = require('../../routes/routeUtils');
 
-const { buildAuditPath, indexOfLeafWithHash } = catapult.crypto.merkle;
-
 const parseHeight = params => routeUtils.parseArgument(params, 'height', 'uint');
 
-const getStatementsPromise = (db, height, operation) => dbFacade.runHeightDependentOperation(db, height, () => operation(height));
+const getStatementsPromise = (db, height, statementsCollection) =>
+	dbFacade.runHeightDependentOperation(db.catapultDb, height, () => db.statementsAtHeight(height, statementsCollection));
 
 module.exports = {
 	register: (server, db) => {
@@ -36,9 +34,9 @@ module.exports = {
 			const height = parseHeight(req.params);
 
 			return Promise.all([
-				getStatementsPromise(db, height, db.transactionStatementsAtHeight),
-				getStatementsPromise(db, height, db.addressResolutionStatementsAtHeight),
-				getStatementsPromise(db, height, db.mosaicResolutionStatementsAtHeight)
+				getStatementsPromise(db, height, 'transactionStatements'),
+				getStatementsPromise(db, height, 'addressResolutionStatements'),
+				getStatementsPromise(db, height, 'mosaicResolutionStatements')
 			]).then(results => {
 				const [
 					transactionStatementsInfo,
@@ -66,42 +64,9 @@ module.exports = {
 			});
 		});
 
-		server.get('/block/:height/receipt/:hash/merkle', (req, res, next) => {
-			const height = parseHeight(req.params);
-			const hash = routeUtils.parseArgument(req.params, 'hash', 'hash256');
-
-			return dbFacade.runHeightDependentOperation(db, height, () => db.blockWithStatementMerkleTreeAtHeight(height))
-				.then(result => {
-					if (!result.isRequestValid) {
-						res.send(errors.createNotFoundError(height));
-						return next();
-					}
-
-					const block = result.payload;
-					if (!block.meta.numStatements) {
-						res.send(errors.createInvalidArgumentError(`hash '${req.params.hash}' not included in block height '${height}'`));
-						return next();
-					}
-
-					const merkleTree = {
-						count: block.meta.numStatements,
-						nodes: block.meta.statementMerkleTree.map(merkleHash => merkleHash.buffer)
-					};
-
-					if (0 > indexOfLeafWithHash(hash, merkleTree)) {
-						res.send(errors.createInvalidArgumentError(`hash '${req.params.hash}' not included in block height '${height}'`));
-						return next();
-					}
-
-					const merklePath = buildAuditPath(hash, merkleTree);
-
-					res.send({
-						payload: { merklePath },
-						type: routeResultTypes.merkleProofInfo
-					});
-
-					return next();
-				});
-		});
+		server.get(
+			'/block/:height/receipt/:hash/merkle',
+			routeUtils.blockRouteMerkleProcessor(db.catapultDb, 'numStatements', 'statementMerkleTree')
+		);
 	}
 };

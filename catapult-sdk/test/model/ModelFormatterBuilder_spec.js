@@ -51,6 +51,7 @@ describe('model formatter builder', () => {
 				'merkleProofInfo',
 				'nodeInfo',
 				'nodeTime',
+				'serverInfo',
 				'storageInfo',
 				'transactionStatus'
 			]);
@@ -73,7 +74,7 @@ describe('model formatter builder', () => {
 					version: 0,
 					type: 0,
 
-					fee: 0,
+					maxFee: 0,
 					deadline: 0
 				}
 			});
@@ -91,7 +92,7 @@ describe('model formatter builder', () => {
 					version: 'none',
 					type: 'none',
 
-					fee: 'uint64',
+					maxFee: 'uint64',
 					deadline: 'uint64'
 				}
 			});
@@ -121,7 +122,9 @@ describe('model formatter builder', () => {
 					difficulty: 0,
 					previousBlockHash: 0,
 					blockTransactionsHash: 0,
-					stateHash: 0
+					blockReceiptsHash: 0,
+					stateHash: 0,
+					beneficiary: 0
 				}
 			});
 
@@ -145,7 +148,9 @@ describe('model formatter builder', () => {
 					difficulty: 'uint64',
 					previousBlockHash: 'binary',
 					blockTransactionsHash: 'binary',
-					stateHash: 'binary'
+					blockReceiptsHash: 'binary',
+					stateHash: 'binary',
+					beneficiary: 'binary'
 				}
 			});
 		});

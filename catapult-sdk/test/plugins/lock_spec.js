@@ -28,8 +28,8 @@ const { expect } = require('chai');
 const constants = {
 	sizes: {
 		hashLockSize: 24 + 32,
-		secretLockSize: 24 + 1 + 64 + 25,
-		secretProof: 1 + 64 + 2
+		secretLockSize: 24 + 1 + 32 + 25,
+		secretProof: 1 + 32 + 25 + 2
 	}
 };
 
@@ -76,7 +76,7 @@ describe('lock plugin', () => {
 			const transactionSchemaSize = Object.keys(modelSchema.transaction).length;
 			assertSchema(modelSchema.hashLock, transactionSchemaSize + 4, 'mosaicId', 'amount', 'duration', 'hash');
 			assertSchema(modelSchema.secretLock, transactionSchemaSize + 5, 'mosaicId', 'amount', 'duration', 'secret', 'recipient');
-			assertSchema(modelSchema.secretProof, transactionSchemaSize + 2, 'secret', 'proof');
+			assertSchema(modelSchema.secretProof, transactionSchemaSize + 3, 'secret', 'recipient', 'proof');
 		});
 	});
 
@@ -139,7 +139,7 @@ describe('lock plugin', () => {
 
 		describe('supports secret lock', () => {
 			const Recipient_Buffer = Buffer.from(test.random.bytes(test.constants.sizes.addressDecoded));
-			const Secret_Buffer = Buffer.from(test.random.bytes(constants.sizes.hash512));
+			const Secret_Buffer = Buffer.from(test.random.bytes(constants.sizes.hash256));
 
 			const addSecretLockProperties = generator => () => {
 				const data = generator();
@@ -161,7 +161,8 @@ describe('lock plugin', () => {
 		});
 
 		describe('supports secret proof', () => {
-			const Secret_Buffer = Buffer.from(test.random.bytes(constants.sizes.hash512));
+			const Secret_Buffer = Buffer.from(test.random.bytes(constants.sizes.hash256));
+			const Recipient_Buffer = Buffer.from(test.random.bytes(constants.sizes.addressDecoded));
 			const Proof_Buffer = Buffer.from(test.random.bytes(300));
 
 			const generateTransaction = () => {
@@ -169,6 +170,7 @@ describe('lock plugin', () => {
 					buffer: Buffer.concat([
 						Buffer.of(0xFF), // hash algorithm
 						Secret_Buffer, // secret
+						Recipient_Buffer, // recipient
 						Buffer.of(0x00, 0x00), // proof size
 						Proof_Buffer
 					]),
@@ -176,6 +178,7 @@ describe('lock plugin', () => {
 					object: {
 						hashAlgorithm: 0xFF,
 						secret: Secret_Buffer,
+						recipient: Recipient_Buffer,
 						proof: Proof_Buffer
 					}
 				};

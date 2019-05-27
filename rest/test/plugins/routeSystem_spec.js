@@ -38,12 +38,14 @@ describe('route system', () => {
 
 		// Assert:
 		expect(supportedPluginNames).to.deep.equal([
+			'accountLink',
 			'accountProperties',
 			'aggregate',
 			'lock',
 			'mosaic',
 			'multisig',
 			'namespace',
+			'receipts',
 			'transfer'
 		]);
 	});

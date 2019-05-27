@@ -28,7 +28,7 @@ const random = {
 	bytes: size => crypto.randomBytes(size),
 	publicKey: () => crypto.randomBytes(sizes.signer),
 	hash: () => crypto.randomBytes(sizes.hash256),
-	secret: () => crypto.randomBytes(sizes.hash512),
+	secret: () => crypto.randomBytes(sizes.hash256),
 	signature: () => crypto.randomBytes(sizes.signature),
 	address: () => crypto.randomBytes(sizes.addressDecoded),
 	account: () => ({
@@ -42,7 +42,6 @@ module.exports = {
 	random,
 	factory: {
 		createBinary: buffer => new MongoDb.Binary(buffer),
-		createLong: (low, high) => new MongoDb.Long(low, high),
 		createObjectIdFromHexString: id => new MongoDb.ObjectID(id)
 	},
 	log: (...args) => {

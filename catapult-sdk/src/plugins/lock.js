@@ -83,6 +83,7 @@ const lockPlugin = {
 		}));
 		builder.addTransactionSupport(EntityType.secretProof, {
 			secret: ModelType.binary,
+			recipient: ModelType.binary,
 			proof: ModelType.binary
 		});
 	},
@@ -110,7 +111,7 @@ const lockPlugin = {
 				parseLockData(parser, transaction);
 
 				transaction.hashAlgorithm = parser.uint8();
-				transaction.secret = parser.buffer(constants.sizes.hash512);
+				transaction.secret = parser.buffer(constants.sizes.hash256);
 				transaction.recipient = parser.buffer(constants.sizes.addressDecoded);
 				return transaction;
 			},
@@ -128,7 +129,8 @@ const lockPlugin = {
 			deserialize: parser => {
 				const transaction = {};
 				transaction.hashAlgorithm = parser.uint8();
-				transaction.secret = parser.buffer(constants.sizes.hash512);
+				transaction.secret = parser.buffer(constants.sizes.hash256);
+				transaction.recipient = parser.buffer(constants.sizes.addressDecoded);
 				const proofSize = parser.uint16();
 				transaction.proof = parser.buffer(proofSize);
 				return transaction;
@@ -137,6 +139,7 @@ const lockPlugin = {
 			serialize: (transaction, serializer) => {
 				serializer.writeUint8(transaction.hashAlgorithm);
 				serializer.writeBuffer(transaction.secret);
+				serializer.writeBuffer(transaction.recipient);
 				const proofSize = transaction.proof.length;
 				serializer.writeUint16(proofSize);
 				serializer.writeBuffer(transaction.proof);
