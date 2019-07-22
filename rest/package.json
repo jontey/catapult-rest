@@ -1,6 +1,6 @@
 {
   "name": "catapult-api-rest",
-  "version": "1.0.15",
+  "version": "1.0.16",
   "description": "",
   "main": "_build/index.js",
   "scripts": {
@@ -12,7 +12,7 @@
     "test": "mocha --full-trace --recursive",
     "test:coverage": "nyc yarn test && nyc report --reporter=text-lcov",
     "test:jenkins": "cross-env JUNIT_REPORT_PATH=test-results.xml mocha --reporter mocha-jenkins-reporter --mongoHost db --forbid-only --full-trace --recursive test || exit 0",
-    "test:travis": "nyc yarn test && nyc report --reporter=text-lcov | coveralls",
+    "test:travis": "nyc npm run test && nyc report --reporter=text-lcov | coveralls",
     "lint": "eslint src test",
     "lint:jenkins": "eslint -o tests.catapult.lint.xml -f junit src test || exit 0"
   },
@@ -40,7 +40,7 @@
     "catapult-sdk": "link:../catapult-sdk",
     "coveralls": "^3.0.1",
     "mongodb": "^3.0.3",
-    "nyc": "^11.8.0",
+    "nyc": "^14.1.1",
     "restify": "^6.3.4",
     "restify-errors": "^6.0.0",
     "wait-port": "^0.2.2",

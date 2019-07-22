@@ -19,8 +19,8 @@
  */
 
 const routeSystem = require('../../src/plugins/routeSystem');
-const test = require('../routes/utils/routeTestUtils');
 const { expect } = require('chai');
+const { test } = require('../routes/utils/routeTestUtils');
 
 describe('route system', () => {
 	const servicesTemplate = { config: { websocket: {} }, connections: {} };
@@ -39,7 +39,7 @@ describe('route system', () => {
 		// Assert:
 		expect(supportedPluginNames).to.deep.equal([
 			'accountLink',
-			'accountProperties',
+			'accountRestrictions',
 			'aggregate',
 			'lock',
 			'mosaic',

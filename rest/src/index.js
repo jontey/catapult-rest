@@ -159,6 +159,7 @@ const registerRoutes = (server, db, services) => {
 			waitPort({
 				host: config.apiNode.host,
 				port: config.apiNode.port,
+				interval: 5000,
 				timeout: 30000,
 			}).then((open) => {
 				if (open) {

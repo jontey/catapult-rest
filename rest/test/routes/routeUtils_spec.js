@@ -21,9 +21,10 @@
 const catapult = require('catapult-sdk');
 const routeUtils = require('../../src/routes/routeUtils');
 const sinon = require('sinon');
-const test = require('./utils/routeTestUtils');
+const { test } = require('./utils/routeTestUtils');
 
 const { convert } = catapult.utils;
+
 const { expect } = require('chai');
 
 const invalidObjectIdStrings = [

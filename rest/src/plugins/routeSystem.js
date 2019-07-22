@@ -18,35 +18,34 @@
  * along with Catapult.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-const accountLink = require('./accountLink.js');
-const accountProperties = require('./accountProperties.js');
-const aggregate = require('./aggregate');
+const accountRestrictions = require('./accountRestrictions/accountRestrictions');
+const aggregate = require('./aggregate/aggregate');
 const empty = require('./empty');
-const lock = require('./lock');
+const lock = require('./lock/lock');
 const MessageChannelBuilder = require('../connection/MessageChannelBuilder');
-const mosaic = require('./mosaic');
-const multisig = require('./multisig');
-const namespace = require('./namespace');
-const receipts = require('./receipts');
+const mosaic = require('./mosaic/mosaic');
+const multisig = require('./multisig/multisig');
+const namespace = require('./namespace/namespace');
+const receipts = require('./receipts/receipts');
 
 const plugins = {
-	accountLink, accountProperties, aggregate, lock, mosaic, multisig, namespace, receipts, transfer: empty
+	accountLink: empty, accountRestrictions, aggregate, lock, mosaic, multisig, namespace, receipts, transfer: empty
 };
 
 module.exports = {
 	/**
 	 * Gets the names of all supported plugins.
-	 * @returns {array<string>} The names of all supported plugins.
+	 * @returns {array<string>} Names of all supported plugins.
 	 */
 	supportedPluginNames: () => Object.keys(plugins),
 
 	/**
 	 * Configures the server with the specified extensions.
-	 * @param {array} pluginNames The additional extensions to use.
-	 * @param {object} server The server.
-	 * @param {module:db/CatapultDb} db The catapult database.
+	 * @param {array} pluginNames Additional extensions to use.
+	 * @param {object} server Server.
+	 * @param {module:db/CatapultDb} db Catapult database.
 	 * @param {object} services Supporting services.
-	 * @returns {array<module:plugins/CatapultRestPlugin~TransactionStateDescriptor>} The additional transaction states to register.
+	 * @returns {array<module:plugins/CatapultRestPlugin~TransactionStateDescriptor>} Additional transaction states to register.
 	 */
 	configure: (pluginNames, server, db, services) => {
 		const transactionStates = [];
