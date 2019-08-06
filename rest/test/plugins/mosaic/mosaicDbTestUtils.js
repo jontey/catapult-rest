@@ -18,10 +18,10 @@
  * along with Catapult.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-const dbTestUtils = require('../../db/utils/dbTestUtils');
-const MongoDb = require('mongodb');
 const MosaicDb = require('../../../src/plugins/mosaic/MosaicDb');
+const dbTestUtils = require('../../db/utils/dbTestUtils');
 const test = require('../../testUtils');
+const MongoDb = require('mongodb');
 
 const { Binary, Long } = MongoDb;
 

@@ -18,27 +18,40 @@
  * along with Catapult.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-const allRoutes = require('./routes/allRoutes');
-const bootstrapper = require('./server/bootstrapper');
-const catapult = require('catapult-sdk');
-const CatapultDb = require('./db/CatapultDb');
-const dbFormattingRules = require('./db/dbFormattingRules');
-const formatters = require('./server/formatters');
-const fs = require('fs');
-const messageFormattingRules = require('./server/messageFormattingRules');
-const routeSystem = require('./plugins/routeSystem');
-const winston = require('winston');
-const waitPort = require('wait-port');
-const { createConnection } = require('net');
 const { createConnectionService } = require('./connection/connectionService');
 const { createZmqConnectionService } = require('./connection/zmqService');
+const CatapultDb = require('./db/CatapultDb');
+const dbFormattingRules = require('./db/dbFormattingRules');
+const routeSystem = require('./plugins/routeSystem');
+const allRoutes = require('./routes/allRoutes');
+const bootstrapper = require('./server/bootstrapper');
+const formatters = require('./server/formatters');
+const messageFormattingRules = require('./server/messageFormattingRules');
+const catapult = require('catapult-sdk');
+const winston = require('winston');
+const fs = require('fs');
+const { createConnection } = require('net');
+
+const createLoggingTransportConfiguration = loggingConfig => {
+	const transportConfig = Object.assign({}, loggingConfig);
+
+	// map specified formats into a winston function
+	delete transportConfig.formats;
+	const logFormatters = loggingConfig.formats.map(name => winston.format[name]());
+	transportConfig.format = winston.format.combine(...logFormatters);
+	return transportConfig;
+};
 
 const configureLogging = config => {
-	winston.remove(winston.transports.Console);
+	const transports = [new winston.transports.File(createLoggingTransportConfiguration(config.file))];
 	if ('production' !== process.env.NODE_ENV)
-		winston.add(winston.transports.Console, config.console);
+		transports.push(new winston.transports.Console(createLoggingTransportConfiguration(config.console)));
 
-	winston.add(winston.transports.File, config.file);
+	// configure default logger so that it adds timestamp to all logs
+	winston.configure({
+		format: winston.format.timestamp(),
+		transports
+	});
 };
 
 const loadConfig = () => {
@@ -156,21 +169,10 @@ const registerRoutes = (server, db, services) => {
 			const connectionService = createConnectionService(config, createConnection, catapult.auth.createAuthPromise, winston.verbose);
 			registerRoutes(server, db, { codec: serverAndCodec.codec, config, connectionService });
 
-			waitPort({
-				host: config.apiNode.host,
-				port: config.apiNode.port,
-				interval: 5000,
-				timeout: 30000,
-			}).then((open) => {
-				if (open) {
-					connectionService.lease().then(() => {
-						winston.info(`listening on port ${config.port}`);
-						server.listen(config.port);
-					})
-				} else {
-					winston.error('Failed to connect to API node');
-				}
-			})
+			connectionService.lease().then(() => {
+				winston.info(`listening on port ${config.port}`);
+				server.listen(config.port);
+			});
 		})
 		.catch(err => {
 			winston.error('rest server is exiting due to error', err);

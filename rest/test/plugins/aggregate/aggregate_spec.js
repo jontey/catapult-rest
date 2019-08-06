@@ -19,9 +19,9 @@
  */
 
 const aggregate = require('../../../src/plugins/aggregate/aggregate');
+const { test } = require('../../routes/utils/routeTestUtils');
 const pluginTest = require('../utils/pluginTestUtils');
 const { expect } = require('chai');
-const { test } = require('../../routes/utils/routeTestUtils');
 
 describe('aggregate plugin', () => {
 	pluginTest.assertThat.pluginDoesNotCreateDb(aggregate);

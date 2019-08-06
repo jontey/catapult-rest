@@ -18,15 +18,15 @@
  * along with Catapult.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-const AccountType = require('../../../src/plugins/AccountType');
-const catapult = require('catapult-sdk');
+const test = require('./namespaceDbTestUtils');
 const CatapultDb = require('../../../src/db/CatapultDb');
 const dbUtils = require('../../../src/db/dbUtils');
-const MongoDb = require('mongodb');
+const AccountType = require('../../../src/plugins/AccountType');
 const NamespaceDb = require('../../../src/plugins/namespace/NamespaceDb');
-const test = require('./namespaceDbTestUtils');
 const testDbOptions = require('../../db/utils/testDbOptions');
+const catapult = require('catapult-sdk');
 const { expect } = require('chai');
+const MongoDb = require('mongodb');
 
 const { address } = catapult.model;
 const { convertToLong } = dbUtils;

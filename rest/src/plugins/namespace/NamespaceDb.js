@@ -18,10 +18,10 @@
  * along with Catapult.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+const { convertToLong } = require('../../db/dbUtils');
 const AccountType = require('../AccountType');
 const catapult = require('catapult-sdk');
 const MongoDb = require('mongodb');
-const { convertToLong } = require('../../db/dbUtils');
 
 const { Long } = MongoDb;
 
@@ -93,7 +93,7 @@ class NamespaceDb {
 			[catapult.model.namespace.aliasType.address]: () => ({ 'namespace.alias.address': { $in: ids.map(id => Buffer.from(id)) } })
 		};
 
-		return this.catapultDb.database.collection('blocks').count()
+		return this.catapultDb.database.collection('blocks').countDocuments()
 			.then(numBlocks => {
 				const conditions = { $and: [] };
 				conditions.$and.push(aliasFilterCondition[aliasType]());

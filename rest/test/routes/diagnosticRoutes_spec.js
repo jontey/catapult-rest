@@ -18,11 +18,11 @@
  * along with Catapult.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+const { MockServer, test } = require('./utils/routeTestUtils');
+const { version: sdkVersion } = require('../../../catapult-sdk/package.json');
+const { version: restVersion } = require('../../package.json');
 const diagnosticRoutes = require('../../src/routes/diagnosticRoutes');
 const { expect } = require('chai');
-const { MockServer, test } = require('./utils/routeTestUtils');
-const { version: restVersion } = require('../../package.json');
-const { version: sdkVersion } = require('../../../catapult-sdk/package.json');
 
 describe('diagnostic routes', () => {
 	const executeRoute = (routeName, db, assertResponse) =>

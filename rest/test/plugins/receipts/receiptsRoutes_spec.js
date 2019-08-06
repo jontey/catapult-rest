@@ -20,10 +20,9 @@
 
 const receiptsRoutes = require('../../../src/plugins/receipts/receiptsRoutes');
 const routeUtils = require('../../../src/routes/routeUtils');
-const sinon = require('sinon');
 const { MockServer } = require('../../routes/utils/routeTestUtils');
-
 const { expect } = require('chai');
+const sinon = require('sinon');
 
 describe('receipts routes', () => {
 	describe('get transaction statements by height', () => {

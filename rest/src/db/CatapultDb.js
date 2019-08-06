@@ -20,10 +20,10 @@
 
 /** @module db/CatapultDb */
 
-const catapult = require('catapult-sdk');
 const connector = require('./connector');
-const MongoDb = require('mongodb');
 const { convertToLong } = require('./dbUtils');
+const catapult = require('catapult-sdk');
+const MongoDb = require('mongodb');
 
 const { address, EntityType } = catapult.model;
 const { ObjectId } = MongoDb;
@@ -173,9 +173,9 @@ class CatapultDb {
 	 * @returns {Promise} Promise that resolves to the sizes of collections in the database.
 	 */
 	storageInfo() {
-		const blockCountPromise = this.database.collection('blocks').count();
-		const transactionCountPromise = this.database.collection('transactions').count();
-		const accountCountPromise = this.database.collection('accounts').count();
+		const blockCountPromise = this.database.collection('blocks').countDocuments();
+		const transactionCountPromise = this.database.collection('transactions').countDocuments();
+		const accountCountPromise = this.database.collection('accounts').countDocuments();
 		return Promise.all([blockCountPromise, transactionCountPromise, accountCountPromise])
 			.then(storageInfo => ({ numBlocks: storageInfo[0], numTransactions: storageInfo[1], numAccounts: storageInfo[2] }));
 	}

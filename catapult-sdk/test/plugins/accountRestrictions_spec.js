@@ -20,11 +20,10 @@
 
 const EntityType = require('../../src/model/EntityType');
 const ModelSchemaBuilder = require('../../src/model/ModelSchemaBuilder');
-const test = require('../binaryTestUtils');
-const { expect } = require('chai');
-
 const accountRestrictionsPlugin = require('../../src/plugins/accountRestrictions');
 const { AccountRestrictionType } = require('../../src/plugins/accountRestrictions');
+const test = require('../binaryTestUtils');
+const { expect } = require('chai');
 
 describe('account restrictions plugin', () => {
 	describe('account restriction types enumeration', () => {

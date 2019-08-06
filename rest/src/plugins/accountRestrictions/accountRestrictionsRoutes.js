@@ -18,10 +18,10 @@
  * along with Catapult.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+const routeUtils = require('../../routes/routeUtils');
+const errors = require('../../server/errors');
 const AccountType = require('../AccountType');
 const catapult = require('catapult-sdk');
-const errors = require('../../server/errors');
-const routeUtils = require('../../routes/routeUtils');
 
 const { address, networkInfo } = catapult.model;
 

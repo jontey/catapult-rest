@@ -19,13 +19,13 @@
  */
 
 const errors = require('./errors');
-const restify = require('restify');
-const restifyErrors = require('restify-errors');
 const SubscriptionManager = require('./SubscriptionManager');
-const WebSocket = require('ws');
 const websocketMessageHandler = require('./websocketMessageHandler');
 const websocketUtils = require('./websocketUtils');
+const restify = require('restify');
+const restifyErrors = require('restify-errors');
 const winston = require('winston');
+const WebSocket = require('ws');
 
 const isPromise = object => object && object.catch;
 

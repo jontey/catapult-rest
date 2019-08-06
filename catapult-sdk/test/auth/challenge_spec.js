@@ -18,11 +18,11 @@
  * along with Catapult.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-const handler = require('../../src/auth/challenge');
-const PacketType = require('../../src/packet/PacketType');
 const test = require('./utils/authUtils');
-const { expect } = require('chai');
+const handler = require('../../src/auth/challenge');
 const { verify } = require('../../src/crypto/keyPair');
+const PacketType = require('../../src/packet/PacketType');
+const { expect } = require('chai');
 
 describe('challenge', () => {
 	// region verify server challenges
