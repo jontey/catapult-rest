@@ -28,6 +28,7 @@ const formattingRules = {
 	[ModelType.none]: () => 'none',
 	[ModelType.binary]: () => 'binary',
 	[ModelType.uint64]: () => 'uint64',
+	[ModelType.uint64HexIdentifier]: () => 'uint64HexIdentifier',
 	[ModelType.objectId]: () => 'objectId',
 	[ModelType.string]: () => 'string'
 };
@@ -47,7 +48,8 @@ describe('model formatter builder', () => {
 				'blockHeaderWithMetadata',
 				'transactionWithMetadata',
 
-				'chainInfo',
+				'chainStatistic',
+				'chainStatisticCurrent',
 				'merkleProofInfo',
 				'nodeInfo',
 				'nodeTime',
@@ -70,7 +72,7 @@ describe('model formatter builder', () => {
 				},
 				transaction: {
 					signature: 0,
-					signer: 0,
+					signerPublicKey: 0,
 					version: 0,
 					type: 0,
 
@@ -88,7 +90,7 @@ describe('model formatter builder', () => {
 				},
 				transaction: {
 					signature: 'binary',
-					signer: 'binary',
+					signerPublicKey: 'binary',
 					version: 'none',
 					type: 'none',
 
@@ -109,11 +111,11 @@ describe('model formatter builder', () => {
 					generationHash: 0,
 					totalFee: 0,
 					numTransactions: 0,
-					subCacheMerkleRoots: [0]
+					stateHashSubCacheMerkleRoots: [0]
 				},
 				block: {
 					signature: 0,
-					signer: 0,
+					signerPublicKey: 0,
 					version: 0,
 					type: 0,
 
@@ -121,10 +123,10 @@ describe('model formatter builder', () => {
 					timestamp: 0,
 					difficulty: 0,
 					previousBlockHash: 0,
-					blockTransactionsHash: 0,
-					blockReceiptsHash: 0,
+					transactionsHash: 0,
+					receiptsHash: 0,
 					stateHash: 0,
-					beneficiary: 0
+					beneficiaryPublicKey: 0
 				}
 			});
 
@@ -135,11 +137,11 @@ describe('model formatter builder', () => {
 					generationHash: 'binary',
 					totalFee: 'uint64',
 					numTransactions: 'none',
-					subCacheMerkleRoots: ['binary']
+					stateHashSubCacheMerkleRoots: ['binary']
 				},
 				block: {
 					signature: 'binary',
-					signer: 'binary',
+					signerPublicKey: 'binary',
 					version: 'none',
 					type: 'none',
 
@@ -147,10 +149,10 @@ describe('model formatter builder', () => {
 					timestamp: 'uint64',
 					difficulty: 'uint64',
 					previousBlockHash: 'binary',
-					blockTransactionsHash: 'binary',
-					blockReceiptsHash: 'binary',
+					transactionsHash: 'binary',
+					receiptsHash: 'binary',
 					stateHash: 'binary',
-					beneficiary: 'binary'
+					beneficiaryPublicKey: 'binary'
 				}
 			});
 		});
@@ -189,8 +191,8 @@ describe('model formatter builder', () => {
 					importance: 'uint64',
 					importanceHeight: 'uint64',
 					mosaics: [
-						{ id: 'uint64', amount: 'uint64' },
-						{ id: 'uint64', amount: 'uint64' }
+						{ id: 'uint64HexIdentifier', amount: 'uint64' },
+						{ id: 'uint64HexIdentifier', amount: 'uint64' }
 					]
 				}
 			});
@@ -201,17 +203,21 @@ describe('model formatter builder', () => {
 			const formatter = new ModelFormatterBuilder().build(modelSchema, formattingRules);
 
 			// Act:
-			const result = formatter.chainInfo.format({
-				height: 0,
-				scoreLow: 0,
-				scoreHigh: 0
+			const result = formatter.chainStatistic.format({
+				current: {
+					height: 0,
+					scoreLow: 0,
+					scoreHigh: 0
+				}
 			});
 
 			// Assert:
 			expect(result).to.deep.equal({
-				height: 'uint64',
-				scoreLow: 'uint64',
-				scoreHigh: 'uint64'
+				current: {
+					height: 'uint64',
+					scoreLow: 'uint64',
+					scoreHigh: 'uint64'
+				}
 			});
 		});
 
@@ -246,7 +252,7 @@ describe('model formatter builder', () => {
 			const subFormatterTypes = formatter.mosaic.format({ id: 0, amount: 0 });
 
 			// Assert:
-			expect(subFormatterTypes).to.deep.equal({ id: 'uint64', amount: 'uint64' });
+			expect(subFormatterTypes).to.deep.equal({ id: 'uint64HexIdentifier', amount: 'uint64' });
 		});
 
 		it('cannot add arbitrary formatter multiple times', () => {

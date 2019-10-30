@@ -313,7 +313,21 @@ const routeUtils = {
 
 				return next();
 			});
-	}
+	},
+
+	/**
+	 * Returns account public key from account address .
+	 * @param {module:db/CatapultDb} db Catapult database.
+	 * @param {Uint8Array} accountAddress Account address.
+	 * @returns {Promise<Uint8Array>} Account public key.
+	 */
+	addressToPublicKey: (db, accountAddress) => db.addressToPublicKey(accountAddress)
+		.then(result => {
+			if (!result)
+				return Promise.reject(Error('account not found'));
+
+			return result.account.publicKey.buffer;
+		})
 };
 
 module.exports = routeUtils;

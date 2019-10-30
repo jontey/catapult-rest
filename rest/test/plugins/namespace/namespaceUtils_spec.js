@@ -53,7 +53,7 @@ describe('namespace utils', () => {
 			},
 			transaction: {
 				type: catapult.model.EntityType.registerNamespace,
-				namespaceId: convertToLong(namespaceId),
+				id: convertToLong(namespaceId),
 				name: { value: () => name }
 			}
 		});
@@ -153,7 +153,7 @@ describe('namespace utils', () => {
 				// Assert:
 				expect(sendFake.firstCall.args[0]).to.deep.equal({
 					payload: {
-						accountNames: [
+						testSchemaName: [
 							{
 								[fieldName]: 1,
 								names: [

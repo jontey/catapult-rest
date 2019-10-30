@@ -18,6 +18,7 @@
  * along with Catapult.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+const AccountType = require('../AccountType');
 const MongoDb = require('mongodb');
 
 const { Long } = MongoDb;
@@ -40,12 +41,27 @@ class MosaicDb {
 	 */
 	mosaicsByIds(ids) {
 		const mosaicIds = ids.map(id => new Long(id[0], id[1]));
-		const conditions = { 'mosaic.mosaicId': { $in: mosaicIds } };
+		const conditions = { 'mosaic.id': { $in: mosaicIds } };
 		const collection = this.catapultDb.database.collection('mosaics');
 		return collection.find(conditions)
 			.sort({ _id: -1 })
 			.toArray()
-			.then(entities => Promise.resolve(this.catapultDb.sanitizer.copyAndDeleteIds(entities)));
+			.then(entities => Promise.resolve(this.catapultDb.sanitizer.deleteIds(entities)));
+	}
+
+	/**
+	 * Retrieves mosaics owned by specified owners.
+	 * @param {module:db/AccountType} type Type of account ids.
+	 * @param {array<object>} accountIds Account ids.
+	 * @returns {Promise.<array>} Owned mosaics.
+	 */
+	mosaicsByOwners(type, accountIds) {
+		const buffers = accountIds.map(accountId => Buffer.from(accountId));
+		const fieldName = (AccountType.publicKey === type) ? 'mosaic.ownerPublicKey' : 'mosaic.ownerAddress';
+		const conditions = { [fieldName]: { $in: buffers } };
+
+		return this.catapultDb.queryDocuments('mosaics', conditions)
+			.then(mosaics => mosaics.map(mosaic => mosaic.mosaic));
 	}
 
 	// endregion

@@ -186,7 +186,7 @@ describe('namespace routes', () => {
 			// 1. in db, parentId is only stored for child namespaces
 			// 2. db returns null instead of undefined when a document property is not present
 			parentId: undefined === parentId ? null : createParentId(parentId),
-			namespaceId: [0, namespaceId]
+			id: [0, namespaceId]
 		});
 
 		const Valid_Hex_String_Namespace_Ids = ['1234567890ABCDEF', 'ABCDEF0123456789'];
@@ -222,7 +222,7 @@ describe('namespace routes', () => {
 					dbParamTuples.forEach(dbParamTuple => {
 						expect(dbParamTuple.ids).to.deep.equal(options.queryIdsGroupedByLevel[level++]);
 						expect(dbParamTuple.transactionType).to.deep.equal(catapult.model.EntityType.registerNamespace);
-						expect(dbParamTuple.fieldsDescriptor).to.deep.equal({ id: 'namespaceId', name: 'name', parentId: 'parentId' });
+						expect(dbParamTuple.fieldsDescriptor).to.deep.equal({ id: 'id', name: 'name', parentId: 'parentId' });
 					});
 
 					// check response
@@ -301,7 +301,7 @@ describe('namespace routes', () => {
 				expect(aliasNamesRoutesProcessorSpy.calledTwice).to.equal(true);
 				expect(aliasNamesRoutesProcessorSpy.firstCall.args[1]).to.equal(catapult.model.namespace.aliasType.mosaic);
 				expect(aliasNamesRoutesProcessorSpy.firstCall.args[4]).to.equal('mosaicId');
-				expect(aliasNamesRoutesProcessorSpy.firstCall.args[5]).to.equal('mosaicNamesTuples');
+				expect(aliasNamesRoutesProcessorSpy.firstCall.args[5]).to.equal('mosaicNames');
 
 				aliasNamesRoutesProcessorSpy.restore();
 			});
@@ -321,9 +321,10 @@ describe('namespace routes', () => {
 				it('parses mosaic ids correctly', () => {
 					// Arrange:
 					const req = { params: { mosaicIds: ['78A4895CB6653DE4', '56AB67FF45468988'] } };
+					const parsedValues = [[0xB6653DE4, 0x78A4895C], [0x45468988, 0x56AB67FF]].map(convertToLong);
 
 					// Act + Assert:
-					expect(getParams(req)).to.deep.equal([[0xB6653DE4, 0x78A4895C], [0x45468988, 0x56AB67FF]]);
+					expect(getParams(req)).to.deep.equal(parsedValues);
 				});
 
 				it('parses empty mosaic ids list correctly', () => {
@@ -398,7 +399,7 @@ describe('namespace routes', () => {
 				expect(aliasNamesRoutesProcessorSpy.calledTwice).to.equal(true);
 				expect(aliasNamesRoutesProcessorSpy.secondCall.args[1]).to.equal(catapult.model.namespace.aliasType.address);
 				expect(aliasNamesRoutesProcessorSpy.secondCall.args[4]).to.equal('address');
-				expect(aliasNamesRoutesProcessorSpy.secondCall.args[5]).to.equal('accountNamesTuples');
+				expect(aliasNamesRoutesProcessorSpy.secondCall.args[5]).to.equal('accountNames');
 
 				aliasNamesRoutesProcessorSpy.restore();
 			});

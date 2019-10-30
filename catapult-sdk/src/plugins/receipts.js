@@ -38,24 +38,28 @@ const getBasicReceiptType = type => ReceiptType[(type & 0xF000) >> 12] || 'recei
 const receiptsPlugin = {
 	registerSchema: builder => {
 		builder.addSchema('receipts', {
-			transactionStatements: { type: ModelType.array, schemaName: 'receipts.transactionStatement' },
 			addressResolutionStatements: { type: ModelType.array, schemaName: 'receipts.addressResolutionStatement' },
-			mosaicResolutionStatements: { type: ModelType.array, schemaName: 'receipts.mosaicResolutionStatement' }
+			mosaicResolutionStatements: { type: ModelType.array, schemaName: 'receipts.mosaicResolutionStatement' },
+			transactionStatements: { type: ModelType.array, schemaName: 'receipts.transactionStatement' }
 		});
-
-		builder.addSchema('receipts.addressResolutionStatement', {
+		const addStatementSchema = (statementType, schema) => {
+			const schemaName = `receipts.${statementType}Statement`;
+			builder.addSchema(schemaName, {
+				statement: { type: ModelType.object, schemaName: `${schemaName}.statement` }
+			});
+			builder.addSchema(`${schemaName}.statement`, schema);
+		};
+		addStatementSchema('addressResolution', {
 			height: ModelType.uint64,
 			unresolved: ModelType.binary,
 			resolutionEntries: { type: ModelType.array, schemaName: 'receipts.entry.address' }
 		});
-
-		builder.addSchema('receipts.mosaicResolutionStatement', {
+		addStatementSchema('mosaicResolution', {
 			height: ModelType.uint64,
-			unresolved: ModelType.uint64,
+			unresolved: ModelType.uint64HexIdentifier,
 			resolutionEntries: { type: ModelType.array, schemaName: 'receipts.entry.mosaic' }
 		});
-
-		builder.addSchema('receipts.transactionStatement', {
+		addStatementSchema('transaction', {
 			height: ModelType.uint64,
 			receipts: { type: ModelType.array, schemaName: entity => getBasicReceiptType(entity.type) }
 		});
@@ -65,28 +69,28 @@ const receiptsPlugin = {
 		});
 
 		builder.addSchema('receipts.entry.mosaic', {
-			resolved: ModelType.uint64
+			resolved: ModelType.uint64HexIdentifier
 		});
 
 		builder.addSchema('receipts.balanceChange', {
-			account: ModelType.binary,
-			mosaicId: ModelType.uint64,
+			targetPublicKey: ModelType.binary,
+			mosaicId: ModelType.uint64HexIdentifier,
 			amount: ModelType.uint64
 		});
 
 		builder.addSchema('receipts.balanceTransfer', {
-			sender: ModelType.binary,
-			recipient: ModelType.binary,
-			mosaicId: ModelType.uint64,
+			senderPublicKey: ModelType.binary,
+			recipientAddress: ModelType.binary,
+			mosaicId: ModelType.uint64HexIdentifier,
 			amount: ModelType.uint64
 		});
 
 		builder.addSchema('receipts.artifactExpiry', {
-			artifactId: ModelType.uint64
+			artifactId: ModelType.uint64HexIdentifier
 		});
 
 		builder.addSchema('receipts.inflation', {
-			mosaicId: ModelType.uint64,
+			mosaicId: ModelType.uint64HexIdentifier,
 			amount: ModelType.uint64
 		});
 

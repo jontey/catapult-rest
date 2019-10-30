@@ -82,11 +82,13 @@ describe('model schema builder', () => {
 				'transactionStatus',
 
 				'account',
+				'activityBucket',
 				'mosaic',
-				'accountMetadata',
+				'accountMeta',
 				'accountWithMetadata',
 
-				'chainInfo',
+				'chainStatistic',
+				'chainStatisticCurrent',
 				'nodeInfo',
 				'communicationTimestamps',
 				'nodeTime',
@@ -150,6 +152,8 @@ describe('model schema builder', () => {
 				'accountWithMetadata.meta',
 				'accountWithMetadata.account',
 
+				'chainStatistic.current',
+
 				'nodeTime.communicationTimestamps'
 			]);
 		});
@@ -160,8 +164,9 @@ describe('model schema builder', () => {
 
 			// Assert:
 			expect(matchingProperties).to.deep.equal([
-				'blockHeaderMetadata.subCacheMerkleRoots',
+				'blockHeaderMetadata.stateHashSubCacheMerkleRoots',
 				'merkleProofInfo.merklePath',
+				'account.activityBuckets',
 				'account.mosaics'
 			]);
 		});
@@ -177,30 +182,32 @@ describe('model schema builder', () => {
 			// Assert:
 			expect(matchingProperties).to.deep.equal([
 				'verifiableEntity.signature',
-				'verifiableEntity.signer',
+				'verifiableEntity.signerPublicKey',
 
 				'blockHeader.previousBlockHash',
-				'blockHeader.blockTransactionsHash',
-				'blockHeader.blockReceiptsHash',
+				'blockHeader.transactionsHash',
+				'blockHeader.receiptsHash',
 				'blockHeader.stateHash',
-				'blockHeader.beneficiary',
+				'blockHeader.beneficiaryPublicKey',
 				'blockHeader.signature',
-				'blockHeader.signer',
+				'blockHeader.signerPublicKey',
 				'blockHeaderMetadata.hash',
 				'blockHeaderMetadata.generationHash',
-				'blockHeaderMetadata.subCacheMerkleRoots.schemaName',
+				'blockHeaderMetadata.stateHashSubCacheMerkleRoots.schemaName',
 				'merkleProofInfoPathNode.hash',
 
 				'transaction.signature',
-				'transaction.signer',
+				'transaction.signerPublicKey',
 				'transactionMetadata.aggregateHash',
 				'transactionMetadata.hash',
 				'transactionMetadata.merkleComponentHash',
 
 				'transactionStatus.hash',
+				'transactionStatus.address',
 
 				'account.address',
 				'account.publicKey',
+				'account.linkedAccountKey',
 
 				'nodeInfo.publicKey'
 			]);
@@ -228,15 +235,27 @@ describe('model schema builder', () => {
 				'account.publicKeyHeight',
 				'account.importance',
 				'account.importanceHeight',
-				'mosaic.id',
+				'activityBucket.startHeight',
+				'activityBucket.totalFeesPaid',
+				'activityBucket.rawScore',
 				'mosaic.amount',
 
-				'chainInfo.height',
-				'chainInfo.scoreLow',
-				'chainInfo.scoreHigh',
+				'chainStatisticCurrent.height',
+				'chainStatisticCurrent.scoreLow',
+				'chainStatisticCurrent.scoreHigh',
 
 				'communicationTimestamps.receiveTimestamp',
 				'communicationTimestamps.sendTimestamp'
+			]);
+		});
+
+		it('exposes correct uint64HexIdentifier properties', () => {
+			// Act:
+			const matchingProperties = extractSchemaPropertiesWithType('uint64HexIdentifier');
+
+			// Assert:
+			expect(matchingProperties).to.deep.equal([
+				'mosaic.id'
 			]);
 		});
 

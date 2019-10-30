@@ -25,7 +25,9 @@ const sha3Hasher = require('./crypto/sha3Hasher');
 const address = require('./model/address');
 const EntityType = require('./model/EntityType');
 const idReducer = require('./model/idReducer');
+const metadata = require('./model/metadata');
 const ModelType = require('./model/ModelType');
+const restriction = require('./model/restriction');
 const namespace = require('./model/namespace');
 const networkInfo = require('./model/networkInfo');
 const status = require('./model/status');
@@ -65,7 +67,9 @@ const catapultSdk = {
 		address,
 		EntityType,
 		idReducer,
+		metadata,
 		ModelType,
+		restriction,
 		namespace,
 		networkInfo,
 		status

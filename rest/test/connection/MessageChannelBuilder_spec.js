@@ -236,10 +236,10 @@ describe('message channel builder', () => {
 						Buffer.of(55, 0, 0, 0), // status
 						Buffer.of(66, 0, 0, 0, 0, 0, 0, 0) // deadline
 					]);
-					handler(codec, eventData => emitted.push(eventData))(22, buffer, 99);
+					const topic = Buffer.concat([Buffer.of('s'.charCodeAt(0)), addressTemplate.decoded]);
+					handler(codec, eventData => emitted.push(eventData))(topic, buffer, 99);
 
 					// Assert:
-					// - 22 is a "topic" so it's not forwarded
 					// - trailing param 99 should be ignored
 					expect(codec.collected.length).to.equal(0);
 
@@ -248,6 +248,7 @@ describe('message channel builder', () => {
 						type: 'transactionStatus',
 						payload: {
 							hash: Buffer.alloc(test.constants.sizes.hash256, 41),
+							address: addressTemplate.decoded,
 							status: 55,
 							deadline: [66, 0]
 						}

@@ -36,15 +36,15 @@ describe('receipts routes', () => {
 		const mosaicResolutionStatementData = ['dummyStatement'];
 		const statementsFake = sinon.stub();
 		const orderedStatementsCollections = ['transactionStatements', 'addressResolutionStatements', 'mosaicResolutionStatements'];
-		statementsFake.withArgs(correctQueriedHeight, orderedStatementsCollections[0]).returns(transactionStatementData);
 		statementsFake.withArgs(correctQueriedHeight, orderedStatementsCollections[1]).returns(addressResolutionStatementData);
 		statementsFake.withArgs(correctQueriedHeight, orderedStatementsCollections[2]).returns(mosaicResolutionStatementData);
+		statementsFake.withArgs(correctQueriedHeight, orderedStatementsCollections[0]).returns(transactionStatementData);
 
 		const mockServer = new MockServer();
 
 		receiptsRoutes.register(mockServer.server, {
 			catapultDb: {
-				chainInfo: () => Promise.resolve({ height: highestHeight })
+				chainStatisticCurrent: () => Promise.resolve({ height: highestHeight })
 			},
 			statementsAtHeight: statementsFake
 		});
@@ -57,7 +57,7 @@ describe('receipts routes', () => {
 			const req = { params: { height: correctQueriedHeight.toString() } };
 
 			// Act:
-			const route = mockServer.routes[endpointUnderTest];
+			const route = mockServer.getRoute(endpointUnderTest).get();
 			return mockServer.callRoute(route, req).then(() => {
 				// Assert:
 				expect(statementsFake.calledThrice).to.equal(true);
@@ -68,9 +68,9 @@ describe('receipts routes', () => {
 
 				expect(mockServer.send.firstCall.args[0]).to.deep.equal({
 					payload: {
-						transactionStatements: transactionStatementData,
 						addressResolutionStatements: addressResolutionStatementData,
-						mosaicResolutionStatements: mosaicResolutionStatementData
+						mosaicResolutionStatements: mosaicResolutionStatementData,
+						transactionStatements: transactionStatementData
 					},
 					type: 'receipts'
 				});
@@ -83,7 +83,7 @@ describe('receipts routes', () => {
 			const req = { params: { height: queriedHeight.toString() } };
 
 			// Act:
-			const route = mockServer.routes[endpointUnderTest];
+			const route = mockServer.getRoute(endpointUnderTest).get();
 			return mockServer.callRoute(route, req).then(() => {
 				// Assert:
 				expect(statementsFake.calledThrice).to.equal(true);
@@ -97,7 +97,7 @@ describe('receipts routes', () => {
 			const req = { params: { height: '10A' } };
 
 			// Act:
-			const route = mockServer.routes[endpointUnderTest];
+			const route = mockServer.getRoute(endpointUnderTest).get();
 			const apiResponse = expect(() => mockServer.callRoute(route, req).then(() => {})).to;
 
 			// Assert:

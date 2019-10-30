@@ -69,8 +69,23 @@ const EntityType = {
 	/** Account operation restriction modification transaction. */
 	accountRestrictionOperation: 0x4350,
 
+	/** Mosaic address restriction modification transaction. */
+	mosaicRestrictionAddress: 0x4251,
+
+	/** Mosaic global restriction modification transaction. */
+	mosaicRestrictionGlobal: 0x4151,
+
 	/** Account link transaction. */
-	accountLink: 0x414C
+	accountLink: 0x414C,
+
+	/** Account metadata transaction */
+	accountMetadata: 0x4144,
+
+	/** Mosaic metadata transaction */
+	mosaicMetadata: 0x4244,
+
+	/** Namespace metadata transaction */
+	namespaceMetadata: 0x4344
 };
 
 module.exports = EntityType;

@@ -42,11 +42,14 @@ const ModelType = {
 	/** Schema property type indicating a uint16. */
 	uint16: SchemaType.max + 5,
 
-	/** Schema property type indicating a uint64 value. */
-	uint64: SchemaType.max + 6
+	/** Schema property type indicating a uint64 value as string. */
+	uint64: SchemaType.max + 6,
+
+	/** Schema property type indicating a uint64 identifier as hexadecimal. */
+	uint64HexIdentifier: SchemaType.max + 7
 };
 
 Object.assign(ModelType, SchemaType);
-ModelType.max = ModelType.uint64;
+ModelType.max = ModelType.uint64HexIdentifier;
 
 module.exports = ModelType;

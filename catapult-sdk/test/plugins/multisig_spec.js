@@ -68,7 +68,7 @@ describe('multisig plugin', () => {
 
 			expect(Object.keys(modelSchema['multisigEntry.multisig']).length).to.equal(4);
 			expect(modelSchema['multisigEntry.multisig'])
-				.to.contain.all.keys(['account', 'accountAddress', 'multisigAccounts', 'cosignatories']);
+				.to.contain.all.keys(['accountPublicKey', 'accountAddress', 'multisigPublicKeys', 'cosignatoryPublicKeys']);
 
 			// - multisig graph
 			expect(Object.keys(modelSchema.multisigGraph).length).to.equal(1);
@@ -132,9 +132,9 @@ describe('multisig plugin', () => {
 				data.buffer.writeUInt8(3, constants.sizes.modifyMultisigAccount - 1);
 
 				data.object.modifications = [
-					{ modificationType: 0x31, cosignatoryPublicKey: key1 },
-					{ modificationType: 0x20, cosignatoryPublicKey: key2 },
-					{ modificationType: 0x86, cosignatoryPublicKey: key3 }
+					{ modificationAction: 0x31, cosignatoryPublicKey: key1 },
+					{ modificationAction: 0x20, cosignatoryPublicKey: key2 },
+					{ modificationAction: 0x86, cosignatoryPublicKey: key3 }
 				];
 				return data;
 			};

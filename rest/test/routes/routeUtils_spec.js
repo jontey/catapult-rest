@@ -20,10 +20,12 @@
 
 const { test } = require('./utils/routeTestUtils');
 const routeUtils = require('../../src/routes/routeUtils');
+const MongoDb = require('mongodb');
 const catapult = require('catapult-sdk');
 const { expect } = require('chai');
 const sinon = require('sinon');
 
+const { Binary } = MongoDb;
 const { convert } = catapult.utils;
 
 const invalidObjectIdStrings = [
@@ -482,7 +484,7 @@ describe('route utils', () => {
 		blockInfoMockData.meta[blockMetaTreeField] = merkleTree;
 
 		const db = {
-			chainInfo: () => Promise.resolve({ height: highestHeight }),
+			chainStatisticCurrent: () => Promise.resolve({ height: highestHeight }),
 			blockWithMerkleTreeAtHeight: () => Promise.resolve(blockInfoMockData)
 		};
 
@@ -588,6 +590,40 @@ describe('route utils', () => {
 				});
 				expect(nextFake.calledOnce).to.equal(true);
 			});
+		});
+	});
+
+	describe('addressToPublicKey', () => {
+		const { addresses, publicKeys } = test.sets;
+		const accountAddress = catapult.model.address.stringToAddress(addresses.valid[0]);
+		const accountPublicKey = convert.hexToUint8(publicKeys.valid[0]);
+
+		it('return correct public key from account address ', () => {
+			// Arrange:
+			const dbAddressToPublicKeyFake = sinon.fake.resolves({
+				_id: undefined,
+				account: { publicKey: new Binary(Buffer.from(accountPublicKey)) }
+			});
+			const db = { addressToPublicKey: dbAddressToPublicKeyFake };
+			// Act:
+			return routeUtils.addressToPublicKey(db, accountAddress).then(result => {
+				// Assert:
+				expect(dbAddressToPublicKeyFake.calledOnceWith(accountAddress)).to.equal(true);
+				expect(result.equals(accountPublicKey)).to.be.equal(true);
+			});
+		});
+
+		it('rejects with error when account id is not found', () => {
+			// Arrange:
+			const dbAddressToPublicKeyFake = sinon.fake.resolves(undefined);
+			const db = { addressToPublicKey: dbAddressToPublicKeyFake };
+			// Act:
+			return routeUtils.addressToPublicKey(db, accountAddress)
+				// Assert:
+				.then(() => expect.fail())
+				.catch(err => {
+					expect(err.toString()).to.include('account not found');
+				});
 		});
 	});
 });

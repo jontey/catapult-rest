@@ -35,7 +35,7 @@ class ModelSchemaBuilder {
 
 			verifiableEntity: {
 				signature: ModelType.binary,
-				signer: ModelType.binary
+				signerPublicKey: ModelType.binary
 			},
 
 			// endregion
@@ -47,16 +47,16 @@ class ModelSchemaBuilder {
 				timestamp: ModelType.uint64,
 				difficulty: ModelType.uint64,
 				previousBlockHash: ModelType.binary,
-				blockTransactionsHash: ModelType.binary,
-				blockReceiptsHash: ModelType.binary,
+				transactionsHash: ModelType.binary,
+				receiptsHash: ModelType.binary,
 				stateHash: ModelType.binary,
-				beneficiary: ModelType.binary
+				beneficiaryPublicKey: ModelType.binary
 			},
 			blockHeaderMetadata: {
 				hash: ModelType.binary,
 				generationHash: ModelType.binary,
 				totalFee: ModelType.uint64,
-				subCacheMerkleRoots: { type: ModelType.array, schemaName: ModelType.binary }
+				stateHashSubCacheMerkleRoots: { type: ModelType.array, schemaName: ModelType.binary }
 			},
 			blockHeaderWithMetadata: {
 				meta: { type: ModelType.object, schemaName: 'blockHeaderMetadata' },
@@ -100,6 +100,7 @@ class ModelSchemaBuilder {
 
 			transactionStatus: {
 				hash: ModelType.binary,
+				address: ModelType.binary,
 				status: ModelType.statusCode,
 				deadline: ModelType.uint64,
 				height: ModelType.uint64
@@ -114,18 +115,25 @@ class ModelSchemaBuilder {
 				addressHeight: ModelType.uint64,
 				publicKey: ModelType.binary,
 				publicKeyHeight: ModelType.uint64,
+				linkedAccountKey: ModelType.binary,
 				importance: ModelType.uint64,
 				importanceHeight: ModelType.uint64,
+				activityBuckets: { type: ModelType.array, schemaName: 'activityBucket' },
 				mosaics: { type: ModelType.array, schemaName: 'mosaic' }
 			},
+			activityBucket: {
+				startHeight: ModelType.uint64,
+				totalFeesPaid: ModelType.uint64,
+				rawScore: ModelType.uint64
+			},
 			mosaic: {
-				id: ModelType.uint64,
+				id: ModelType.uint64HexIdentifier,
 				amount: ModelType.uint64
 			},
-			accountMetadata: {
+			accountMeta: {
 			},
 			accountWithMetadata: {
-				meta: { type: ModelType.object, schemaName: 'accountMetadata' },
+				meta: { type: ModelType.object, schemaName: 'accountMeta' },
 				account: { type: ModelType.object, schemaName: 'account' }
 			},
 
@@ -133,7 +141,10 @@ class ModelSchemaBuilder {
 
 			// region other
 
-			chainInfo: {
+			chainStatistic: {
+				current: { type: ModelType.object, schemaName: 'chainStatisticCurrent' }
+			},
+			chainStatisticCurrent: {
 				height: ModelType.uint64,
 				scoreLow: ModelType.uint64,
 				scoreHigh: ModelType.uint64

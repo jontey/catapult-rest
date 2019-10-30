@@ -27,6 +27,9 @@ const test = require('../testUtils');
 const catapult = require('catapult-sdk');
 const { expect } = require('chai');
 const hippie = require('hippie');
+const restify = require('restify');
+const sinon = require('sinon');
+const winston = require('winston');
 const WebSocket = require('ws');
 const zmq = require('zeromq');
 const EventEmitter = require('events');
@@ -46,11 +49,13 @@ const dummyIds = {
 // region dummy route
 
 // note that custom formatting will strip high part
-const createChainInfo = (height, scoreLow, scoreHigh) => ({
+const createChainStatistic = (height, scoreLow, scoreHigh) => ({
 	id: 123,
-	height: [height, height],
-	scoreLow: [scoreLow, scoreLow],
-	scoreHigh: [scoreHigh, scoreHigh]
+	current: {
+		height: [height, height],
+		scoreLow: [scoreLow, scoreLow],
+		scoreHigh: [scoreHigh, scoreHigh]
+	}
 });
 
 const addRestRoutes = server => {
@@ -61,16 +66,16 @@ const addRestRoutes = server => {
 			switch (dummyId) {
 			case dummyIds.valid: {
 				// respond with a valid chain info
-				const chainInfo = createChainInfo(10, 16, 11);
-				res.send({ payload: chainInfo, type: 'chainInfo' });
+				const chainStatistic = createChainStatistic(10, 16, 11);
+				res.send({ payload: chainStatistic, type: 'chainStatistic' });
 				break;
 			}
 
 			case dummyIds.replayTag: {
 				// respond with a valid chain info computed from the tag parameter
 				const tag = req.params.tag | 0; // query parameters are parsed as strings so convert to int
-				const chainInfo = createChainInfo(tag, tag, tag);
-				res.send({ payload: chainInfo, type: 'chainInfo' });
+				const chainStatistic = createChainStatistic(tag, tag, tag);
+				res.send({ payload: chainStatistic, type: 'chainStatistic' });
 				break;
 			}
 
@@ -83,9 +88,9 @@ const addRestRoutes = server => {
 				return undefined; // don't call next below because it is called by res.redirect
 
 			case dummyIds.asyncValid:
-				return Promise.resolve({ height: [11, 11] })
-					.then(chainInfo => {
-						res.send({ payload: chainInfo, type: 'chainInfo' });
+				return Promise.resolve({ current: { height: [11, 11] } })
+					.then(chainStatistic => {
+						res.send({ payload: chainStatistic, type: 'chainStatistic' });
 						next();
 					});
 
@@ -107,35 +112,39 @@ const addRestRoutes = server => {
 
 const servers = [];
 
-const createServer = options => {
-	const serverFormatters = formatters.create({
-		[(options && options.formatterName) || 'json']: {
-			chainInfo: {
-				// real formatting is not actually being tested, so just drop high part
-				format: chainInfo => {
-					const formatUint64 = uint64 => (uint64 ? [uint64[0], 0] : undefined);
-					return {
-						id: chainInfo.id,
-						height: formatUint64(chainInfo.height),
-						scoreLow: formatUint64(chainInfo.scoreLow),
-						scoreHigh: formatUint64(chainInfo.scoreHigh)
-					};
-				}
-			},
-			blockHeaderWithMetadata: {
-				// real formatting is not actually being tested, so just format a few properties
-				format: blockHeaderWithMetadata => {
-					const { block } = blockHeaderWithMetadata;
-					return {
-						height: block.height,
-						signer: catapult.utils.convert.uint8ToHex(block.signer)
-					};
-				}
+const createFormatters = options => formatters.create({
+	[(options && options.formatterName) || 'json']: {
+		chainStatistic: {
+			// real formatting is not actually being tested, so just drop high part
+			format: chainStatistic => {
+				const formatUint64 = uint64 => (uint64 ? [uint64[0], 0] : undefined);
+				const formatChainStatisticCurrent = chainStatisticCurrent => ({
+					height: formatUint64(chainStatisticCurrent.height),
+					scoreLow: formatUint64(chainStatisticCurrent.scoreLow),
+					scoreHigh: formatUint64(chainStatisticCurrent.scoreHigh)
+				});
+
+				return {
+					id: chainStatistic.id,
+					current: formatChainStatisticCurrent(chainStatistic.current)
+				};
+			}
+		},
+		blockHeaderWithMetadata: {
+			// real formatting is not actually being tested, so just format a few properties
+			format: blockHeaderWithMetadata => {
+				const { block } = blockHeaderWithMetadata;
+				return {
+					height: block.height,
+					signerPublicKey: catapult.utils.convert.uint8ToHex(block.signerPublicKey)
+				};
 			}
 		}
-	});
+	}
+});
 
-	const server = bootstrapper.createServer((options || {}).crossDomainHttpMethods, serverFormatters);
+const createServer = options => {
+	const server = bootstrapper.createServer((options || {}).crossDomain, createFormatters(options));
 	servers.push(server);
 	return server;
 };
@@ -149,6 +158,82 @@ describe('server (bootstrapper)', () => {
 			const server = servers.pop();
 			server.close();
 		}
+	});
+
+	// throttling tests are not ideal (can't guarantee those were added to the server) because everything related
+	// to the restify server happens intrinsically and is too coupled - those are best-effort tests
+	describe('throttling config', () => {
+		it('uses provided config', done => {
+			// Arrange:
+			const throttlingConfig = {
+				burst: 20,
+				rate: 5
+			};
+			const spy = sinon.spy(restify.plugins, 'throttle');
+
+			// Act:
+			bootstrapper.createServer({}, createFormatters(), throttlingConfig);
+
+			// Assert:
+			expect(spy.calledOnceWith({
+				burst: 20,
+				rate: 5,
+				ip: true
+			})).to.equal(true);
+
+			spy.restore();
+			done();
+		});
+
+		it('does not throttle if no configuration present', done => {
+			// Arrange:
+			const spy = sinon.spy(restify.plugins, 'throttle');
+
+			// Act:
+			bootstrapper.createServer({}, createFormatters());
+
+			// Assert:
+			expect(spy.notCalled).to.equal(true);
+
+			spy.restore();
+			done();
+		});
+
+		describe('does not throttle for incomplete configuration and logs a warning', () => {
+			it('missing rate', done => {
+				// Arrange:
+				const spy = sinon.spy(restify.plugins, 'throttle');
+				const logSpy = sinon.spy(winston, 'warn');
+
+				// Act:
+				bootstrapper.createServer({}, createFormatters(), { burst: 20 });
+				spy.restore();
+				logSpy.restore();
+
+				// Assert:
+				expect(spy.notCalled).to.equal(true);
+				expect(logSpy.calledWith('throttling was not enabled - configuration is invalid or incomplete')).to.equal(true);
+
+				done();
+			});
+
+			it('missing burst', done => {
+				// Arrange:
+				const spy = sinon.spy(restify.plugins, 'throttle');
+				const logSpy = sinon.spy(winston, 'warn');
+
+				// Act:
+				bootstrapper.createServer({}, createFormatters(), { rate: 20 });
+				spy.restore();
+				logSpy.restore();
+
+				// Assert:
+				expect(spy.notCalled).to.equal(true);
+				expect(logSpy.calledWith('throttling was not enabled - configuration is invalid or incomplete')).to.equal(true);
+
+				done();
+			});
+		});
 	});
 
 	describe('HTTP', () => {
@@ -190,7 +275,7 @@ describe('server (bootstrapper)', () => {
 		};
 
 		const assertPayloadHeaders = (headers, expectedContentLength, options = {}) => {
-			const shouldAllowCrossDomain = !!options.allowMethods;
+			const shouldAllowCrossDomain = !!options.allowedMethods;
 			const shouldHaveContent = undefined !== expectedContentLength;
 
 			const message = `received headers: ${JSON.stringify(headers)}`;
@@ -213,7 +298,7 @@ describe('server (bootstrapper)', () => {
 			// these headers should be stamped when cross domain is allowed
 			if (shouldAllowCrossDomain) {
 				expect(headers['access-control-allow-origin']).to.equal('*');
-				expect(headers['access-control-allow-methods']).to.equal(options.allowMethods);
+				expect(headers['access-control-allow-methods']).to.equal(options.allowedMethods);
 				expect(headers['access-control-allow-headers']).to.equal('Content-Type');
 			}
 		};
@@ -228,9 +313,10 @@ describe('server (bootstrapper)', () => {
 					.expectStatus(200)
 					.end((headers, body) => {
 						// Assert:
-						assertPayloadHeaders(headers, 63, methodOptions);
+						assertPayloadHeaders(headers, 75, methodOptions);
 						expect(body).to.deep.equal({
-							id: 123, height: [10, 0], scoreLow: [16, 0], scoreHigh: [11, 0]
+							id: 123,
+							current: { height: [10, 0], scoreLow: [16, 0], scoreHigh: [11, 0] }
 						});
 						done();
 					});
@@ -241,9 +327,10 @@ describe('server (bootstrapper)', () => {
 					.expectStatus(200)
 					.end((headers, body) => {
 						// Assert:
-						assertPayloadHeaders(headers, 63, methodOptions);
+						assertPayloadHeaders(headers, 75, methodOptions);
 						expect(body).to.deep.equal({
-							id: 123, height: [25, 0], scoreLow: [25, 0], scoreHigh: [25, 0]
+							id: 123,
+							current: { height: [25, 0], scoreLow: [25, 0], scoreHigh: [25, 0] }
 						});
 						done();
 					});
@@ -280,8 +367,8 @@ describe('server (bootstrapper)', () => {
 					.expectStatus(200)
 					.end((headers, body) => {
 						// Assert:
-						assertPayloadHeaders(headers, 17, methodOptions);
-						expect(body).to.deep.equal({ height: [11, 0] });
+						assertPayloadHeaders(headers, 29, methodOptions);
+						expect(body).to.deep.equal({ current: { height: [11, 0] } });
 						done();
 					});
 			});
@@ -328,30 +415,147 @@ describe('server (bootstrapper)', () => {
 
 			// region cross domain
 
-			it('does not add cross domain headers when not in configured cross domain http methods ', done => {
-				makeJsonHippie(`/dummy/${dummyIds.valid}`, method, { crossDomainHttpMethods: ['FOO', 'BAR'] })
-					.expectStatus(200)
-					.end((headers, body) => {
-						// Assert:
-						assertPayloadHeaders(headers, 63, { allowMethods: undefined });
-						expect(body).to.deep.equal({
-							id: 123, height: [10, 0], scoreLow: [16, 0], scoreHigh: [11, 0]
-						});
-						done();
-					});
+			it('logs a warning if CORS configuration not provided', done => {
+				// Arrange:
+				const spy = sinon.spy(winston, 'warn');
+
+				// Act:
+				bootstrapper.createServer(undefined, createFormatters());
+				spy.restore();
+
+				// Assert:
+				expect(spy.calledWith('CORS was not enabled - configuration incomplete')).to.equal(true);
+
+				done();
 			});
 
-			it('adds cross domain headers when in configured cross domain http methods ', done => {
-				makeJsonHippie(`/dummy/${dummyIds.valid}`, method, { crossDomainHttpMethods: ['FOO', method.toUpperCase(), 'BAR'] })
-					.expectStatus(200)
-					.end((headers, body) => {
-						// Assert:
-						assertPayloadHeaders(headers, 63, { allowMethods: `FOO,${method.toUpperCase()},BAR` });
-						expect(body).to.deep.equal({
-							id: 123, height: [10, 0], scoreLow: [16, 0], scoreHigh: [11, 0]
-						});
-						done();
-					});
+			it('omits CORS response if no config provided', done => {
+				// Arrange:
+				const crossDomainAdder = bootstrapper.createCrossDomainHeaderAdder();
+				const request = {
+					method: 'GET',
+					headers: { origin: 'http://nem.example' }
+				};
+				const response = { header: sinon.spy() };
+
+				// Act:
+				crossDomainAdder(request, response);
+
+				// Assert:
+				expect(response.header.notCalled).to.equal(true);
+
+				done();
+			});
+
+			it('builds CORS response with wildcard as set in the config', done => {
+				// Arrange:
+				const crossDomainAdder = bootstrapper.createCrossDomainHeaderAdder({ allowedMethods: ['GET'], allowedHosts: ['*'] });
+				const request = {
+					method: 'GET',
+					headers: { origin: 'http://nem.example' }
+				};
+				const response = { header: sinon.spy() };
+
+				// Act:
+				crossDomainAdder(request, response);
+
+				// Assert:
+				expect(response.header.calledThrice).to.equal(true);
+				expect(response.header.calledWith('Access-Control-Allow-Origin', '*')).to.equal(true);
+				expect(response.header.calledWith('Access-Control-Allow-Methods', 'GET')).to.equal(true);
+				expect(response.header.calledWith('Access-Control-Allow-Headers', 'Content-Type')).to.equal(true);
+
+				done();
+			});
+
+			it('builds CORS response with matching origin in the provided config', done => {
+				// Arrange:
+				const crossDomainAdder = bootstrapper.createCrossDomainHeaderAdder({
+					allowedMethods: ['GET'], allowedHosts: ['http://nem.example']
+				});
+				const request = {
+					method: 'GET',
+					headers: { origin: 'http://nem.example' }
+				};
+				const response = { header: sinon.spy() };
+
+				// Act:
+				crossDomainAdder(request, response);
+
+				// Assert:
+				expect(response.header.callCount).to.equal(4);
+				expect(response.header.calledWith('Access-Control-Allow-Origin', 'http://nem.example')).to.equal(true);
+				expect(response.header.calledWith('Vary', 'Origin')).to.equal(true);
+				expect(response.header.calledWith('Access-Control-Allow-Methods', 'GET')).to.equal(true);
+				expect(response.header.calledWith('Access-Control-Allow-Headers', 'Content-Type')).to.equal(true);
+
+				done();
+			});
+
+			it('omits CORS response if provided operation not allowed', done => {
+				// Arrange:
+				const crossDomainAdder = bootstrapper.createCrossDomainHeaderAdder({
+					allowedMethods: ['GET'], allowedHosts: ['http://nem.example']
+				});
+				const request = {
+					method: 'POST',
+					headers: { origin: 'http://nem.example' }
+				};
+				const response = { header: sinon.spy() };
+
+				// Act:
+				crossDomainAdder(request, response);
+
+				// Assert:
+				expect(response.header.notCalled).to.equal(true);
+
+				done();
+			});
+
+			it('omits CORS response if origin does not match provided config', done => {
+				// Arrange:
+				const crossDomainAdder = bootstrapper.createCrossDomainHeaderAdder({
+					allowedMethods: ['GET'], allowedHosts: ['http://nem.example']
+				});
+				const request = {
+					method: 'GET',
+					headers: { origin: 'http://bad.example' }
+				};
+				const response = { header: sinon.spy() };
+
+				// Act:
+				crossDomainAdder(request, response);
+
+				// Assert:
+				expect(response.header.notCalled).to.equal(true);
+
+				done();
+			});
+
+			it('omits CORS response if origin not provided in the request', done => {
+				// Arrange:
+				const crossDomainAdder = bootstrapper.createCrossDomainHeaderAdder({
+					allowedMethods: ['GET', 'OPTIONS'], allowedHosts: ['*']
+				});
+				const crossDomainAdder2 = bootstrapper.createCrossDomainHeaderAdder({
+					allowedMethods: ['GET'], allowedHosts: ['http://nem.example']
+				});
+				const request = {
+					method: 'GET',
+					headers: {}
+				};
+				const response = { header: sinon.spy() };
+				const response2 = { header: sinon.spy() };
+
+				// Act:
+				crossDomainAdder(request, response);
+				crossDomainAdder2(request, response2);
+
+				// Assert:
+				expect(response.header.notCalled).to.equal(true);
+				expect(response2.header.notCalled).to.equal(true);
+
+				done();
 			});
 
 			// endregion
@@ -416,9 +620,10 @@ describe('server (bootstrapper)', () => {
 					.expectStatus(200)
 					.end((headers, body) => {
 						// Assert:
-						assertPayloadHeaders(headers, 63, {});
+						assertPayloadHeaders(headers, 75, {});
 						expect(body).to.deep.equal({
-							id: 123, height: [25, 0], scoreLow: [25, 0], scoreHigh: [25, 0]
+							id: 123,
+							current: { height: [25, 0], scoreLow: [25, 0], scoreHigh: [25, 0] }
 						});
 						done();
 					});
@@ -441,7 +646,7 @@ describe('server (bootstrapper)', () => {
 
 		describe('OPTIONS', () => {
 			const makeJsonHippieForOptions = route => {
-				const server = createServer({ crossDomainHttpMethods: ['FOO', 'OPTIONS', 'BAR'] });
+				const server = createServer({ crossDomain: { allowedMethods: ['FOO', 'OPTIONS', 'BAR'], allowedHosts: ['*'] } });
 				const routeHandler = (req, res, next) => {
 					res.send(200);
 					next();
@@ -451,7 +656,10 @@ describe('server (bootstrapper)', () => {
 				server.post('/dummy/names', routeHandler);
 				server.post('/dummy', routeHandler);
 
-				return hippie(server).url(route).method('OPTIONS')
+				return hippie(server)
+					.header('Origin', 'http://nem.example')
+					.url(route)
+					.method('OPTIONS')
 					.json()
 					.form();
 			};
@@ -462,7 +670,7 @@ describe('server (bootstrapper)', () => {
 					.expectHeader('allow', expectedMethod)
 					.end(wrapHippieEndHandler((headers, body) => {
 						// Assert: there should be no body
-						assertPayloadHeaders(headers, undefined, { allowMethods: 'FOO,OPTIONS,BAR', numAdditionalHeaders: 1 });
+						assertPayloadHeaders(headers, undefined, { allowedMethods: 'FOO,OPTIONS,BAR', numAdditionalHeaders: 1 });
 						expect(body).to.equal(null);
 						done();
 					}));
@@ -553,7 +761,7 @@ describe('server (bootstrapper)', () => {
 		const createBlockBuffer = tag => Buffer.concat([
 			Buffer.of(0xC0, 0x00, 0x00, 0x00), // size
 			Buffer.from(test.random.bytes(test.constants.sizes.signature)), // signature
-			Buffer.from('A4C656B45C02A02DEF64F15DD781DD5AF29698A353F414FAAA9CDB364A09F98F', 'hex'), // signer
+			Buffer.from('A4C656B45C02A02DEF64F15DD781DD5AF29698A353F414FAAA9CDB364A09F98F', 'hex'), // signerPublicKey
 			Buffer.of(0x03, 0x00, 0x00, 0x80), // version, type
 			Buffer.of(0x97, 0x87, 0x45, 0x0E, tag || 0xE1, 0x6C, 0xB6, 0x62), // height
 			Buffer.from(test.random.bytes(8)), // timestamp
@@ -562,10 +770,10 @@ describe('server (bootstrapper)', () => {
 			Buffer.from(test.random.bytes(test.constants.sizes.hash256)) // block transactions hash
 		]);
 
-		// notice that the formatter only returns height and signer
+		// notice that the formatter only returns height and signerPublicKey
 		const createFormattedBlock = tag => ({
 			height: [0x0E458797, 0x62B66C00 | (tag || 0xE1)],
-			signer: 'A4C656B45C02A02DEF64F15DD781DD5AF29698A353F414FAAA9CDB364A09F98F'
+			signerPublicKey: 'A4C656B45C02A02DEF64F15DD781DD5AF29698A353F414FAAA9CDB364A09F98F'
 		});
 
 		const registerRoute = (server, route) => {
@@ -792,7 +1000,7 @@ describe('server (bootstrapper)', () => {
 					onAllConnected: (zsocket, sockets) => {
 						// Act: unsubscribe the second websocket from an unknown channel (this should have no effect)
 						test.log('unsubscribing second websocket');
-						sockets[1].send(JSON.stringify({ uid: sockets[1].uid, unsubscribe: 'chainInfo' }));
+						sockets[1].send(JSON.stringify({ uid: sockets[1].uid, unsubscribe: 'chainStatistic' }));
 						defaultOnAllConnected(zsocket, sockets);
 					}
 				})
@@ -880,7 +1088,7 @@ describe('server (bootstrapper)', () => {
 		it('unsupported topic subscribe request disconnects client', done => {
 			runInvalidClientTest(done, (ws, messageJson) => {
 				// Act: try to subscribe to an unsupported topic
-				const responseJson = JSON.stringify(Object.assign(JSON.parse(messageJson), { subscribe: 'chainInfo' }));
+				const responseJson = JSON.stringify(Object.assign(JSON.parse(messageJson), { subscribe: 'chainStatistic' }));
 				ws.send(responseJson);
 			});
 		});

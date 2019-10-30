@@ -58,9 +58,9 @@ describe('namespace plugin', () => {
 				'namespaceDescriptor.alias.empty',
 				'namespaceNameTuple',
 				'registerNamespace',
-				'mosaicNamesTuples',
+				'mosaicNames',
 				'mosaicNamesTuple',
-				'accountNamesTuples',
+				'accountNames',
 				'accountNamesTuple'
 			);
 
@@ -79,7 +79,7 @@ describe('namespace plugin', () => {
 			// - namespaceDescriptor.namespace
 			expect(Object.keys(modelSchema['namespaceDescriptor.namespace']).length).to.equal(9);
 			expect(modelSchema['namespaceDescriptor.namespace']).to.contain.all.keys([
-				'level0', 'level1', 'level2', 'alias', 'parentId', 'owner', 'ownerAddress', 'startHeight', 'endHeight'
+				'level0', 'level1', 'level2', 'alias', 'parentId', 'ownerPublicKey', 'ownerAddress', 'startHeight', 'endHeight'
 			]);
 
 			// - namespaceDescriptor.alias.mosaic
@@ -99,23 +99,23 @@ describe('namespace plugin', () => {
 
 			// - namespaceNameTuple
 			expect(Object.keys(modelSchema.namespaceNameTuple).length).to.equal(3);
-			expect(modelSchema.namespaceNameTuple).to.contain.all.keys(['namespaceId', 'name', 'parentId']);
+			expect(modelSchema.namespaceNameTuple).to.contain.all.keys(['id', 'name', 'parentId']);
 
 			// - register namespace
 			expect(Object.keys(modelSchema.registerNamespace).length).to.equal(Object.keys(modelSchema.transaction).length + 4);
-			expect(modelSchema.registerNamespace).to.contain.all.keys(['namespaceId', 'parentId', 'duration', 'name']);
+			expect(modelSchema.registerNamespace).to.contain.all.keys(['id', 'parentId', 'duration', 'name']);
 
-			// - mosaic names tuples
-			expect(Object.keys(modelSchema.mosaicNamesTuples).length).to.equal(1);
-			expect(modelSchema.mosaicNamesTuples).to.contain.all.keys(['mosaicNames']);
+			// - mosaic names
+			expect(Object.keys(modelSchema.mosaicNames).length).to.equal(1);
+			expect(modelSchema.mosaicNames).to.contain.all.keys(['mosaicNames']);
 
 			// - mosaic names tuple
 			expect(Object.keys(modelSchema.mosaicNamesTuple).length).to.equal(2);
 			expect(modelSchema.mosaicNamesTuple).to.contain.all.keys(['mosaicId', 'names']);
 
-			// - account names tuples
-			expect(Object.keys(modelSchema.accountNamesTuples).length).to.equal(1);
-			expect(modelSchema.accountNamesTuples).to.contain.all.keys(['accountNames']);
+			// - account names
+			expect(Object.keys(modelSchema.accountNames).length).to.equal(1);
+			expect(modelSchema.accountNames).to.contain.all.keys(['accountNames']);
 
 			// - account names tuple
 			expect(Object.keys(modelSchema.accountNamesTuple).length).to.equal(2);
@@ -131,6 +131,7 @@ describe('namespace plugin', () => {
 					[ModelType.none]: () => 'none',
 					[ModelType.binary]: () => 'binary',
 					[ModelType.uint64]: () => 'uint64',
+					[ModelType.uint64HexIdentifier]: () => 'uint64HexIdentifier',
 					[ModelType.objectId]: () => 'objectId',
 					[ModelType.string]: () => 'string'
 				};
@@ -142,7 +143,7 @@ describe('namespace plugin', () => {
 					level2: null,
 					alias,
 					parentId: null,
-					owner: null,
+					ownerPublicKey: null,
 					ownerAddress: null,
 					startHeight: null,
 					endHeight: null
@@ -162,7 +163,8 @@ describe('namespace plugin', () => {
 				// Assert
 				expect(Object.keys(formattedEntity).length).to.equal(11);
 				expect(formattedEntity).to.contain.all.keys([
-					'type', 'depth', 'level0', 'level1', 'level2', 'alias', 'parentId', 'owner', 'ownerAddress', 'startHeight', 'endHeight'
+					'type', 'depth', 'level0', 'level1', 'level2', 'alias',
+					'parentId', 'ownerPublicKey', 'ownerAddress', 'startHeight', 'endHeight'
 				]);
 				return formattedEntity.alias;
 			};
@@ -181,7 +183,7 @@ describe('namespace plugin', () => {
 				expect(formattedAlias).to.contain.all.keys(['type', 'mosaicId']);
 				expect(formattedAlias).deep.equal({
 					type: 'none',
-					mosaicId: 'uint64'
+					mosaicId: 'uint64HexIdentifier'
 				});
 			});
 
@@ -281,9 +283,9 @@ describe('namespace plugin', () => {
 		});
 
 		describe('supports register namespace', () => {
-			const generateTransaction = namespaceType => ({
+			const generateTransaction = registrationType => ({
 				buffer: Buffer.concat([
-					Buffer.of(namespaceType), // namespace type
+					Buffer.of(registrationType), // namespace type
 					Buffer.of(0xCA, 0xD0, 0x8E, 0x6E, 0xFF, 0x21, 0x2F, 0x49), // duration or parent id
 					Buffer.of(0xF2, 0x26, 0x6C, 0x06, 0x40, 0x83, 0xB2, 0x92), // namespace id
 					Buffer.of(0x06), // namespace name size
@@ -291,16 +293,16 @@ describe('namespace plugin', () => {
 				]),
 
 				object: {
-					namespaceType,
-					[namespaceType ? 'parentId' : 'duration']: [0x6E8ED0CA, 0x492F21FF],
-					namespaceId: [0x066C26F2, 0x92B28340],
+					registrationType,
+					[registrationType ? 'parentId' : 'duration']: [0x6E8ED0CA, 0x492F21FF],
+					id: [0x066C26F2, 0x92B28340],
 					name: 'jabo38'
 				}
 			});
 
-			const addAll = namespaceType => {
+			const addAll = registrationType => {
 				const size = constants.sizes.registerNamespace + constants.sizes.namespaceName;
-				test.binary.test.addAll(getCodec(EntityType.registerNamespace), size, () => generateTransaction(namespaceType));
+				test.binary.test.addAll(getCodec(EntityType.registerNamespace), size, () => generateTransaction(registrationType));
 			};
 
 			describe('with root type', () => {

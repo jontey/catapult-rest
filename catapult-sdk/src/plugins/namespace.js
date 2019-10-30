@@ -45,18 +45,18 @@ const getAliasBasicType = type => AliasType[type] || 'namespaceDescriptor.alias.
 const namespacePlugin = {
 	registerSchema: builder => {
 		builder.addTransactionSupport(EntityType.aliasAddress, {
-			namespaceId: ModelType.uint64,
+			namespaceId: ModelType.uint64HexIdentifier,
 			address: ModelType.binary
 		});
 
 		builder.addTransactionSupport(EntityType.aliasMosaic, {
-			namespaceId: ModelType.uint64,
-			mosaicId: ModelType.uint64
+			namespaceId: ModelType.uint64HexIdentifier,
+			mosaicId: ModelType.uint64HexIdentifier
 		});
 
 		builder.addTransactionSupport(EntityType.registerNamespace, {
-			namespaceId: ModelType.uint64,
-			parentId: ModelType.uint64,
+			id: ModelType.uint64HexIdentifier,
+			parentId: ModelType.uint64HexIdentifier,
 			duration: ModelType.uint64,
 			name: ModelType.string
 		});
@@ -65,15 +65,16 @@ const namespacePlugin = {
 			meta: { type: ModelType.object, schemaName: 'transactionMetadata' },
 			namespace: { type: ModelType.object, schemaName: 'namespaceDescriptor.namespace' }
 		});
+
 		builder.addSchema('namespaceDescriptor.namespace', {
-			level0: ModelType.uint64,
-			level1: ModelType.uint64,
-			level2: ModelType.uint64,
+			level0: ModelType.uint64HexIdentifier,
+			level1: ModelType.uint64HexIdentifier,
+			level2: ModelType.uint64HexIdentifier,
 
 			alias: { type: ModelType.object, schemaName: entity => getAliasBasicType(entity.type) },
 
-			parentId: ModelType.uint64,
-			owner: ModelType.binary,
+			parentId: ModelType.uint64HexIdentifier,
+			ownerPublicKey: ModelType.binary,
 			ownerAddress: ModelType.binary,
 
 			startHeight: ModelType.uint64,
@@ -81,7 +82,7 @@ const namespacePlugin = {
 		});
 
 		builder.addSchema('namespaceDescriptor.alias.mosaic', {
-			mosaicId: ModelType.uint64
+			mosaicId: ModelType.uint64HexIdentifier
 		});
 
 		builder.addSchema('namespaceDescriptor.alias.address', {
@@ -91,21 +92,21 @@ const namespacePlugin = {
 		builder.addSchema('namespaceDescriptor.alias.empty', {});
 
 		builder.addSchema('namespaceNameTuple', {
-			namespaceId: ModelType.uint64,
+			id: ModelType.uint64HexIdentifier,
 			name: ModelType.string,
-			parentId: ModelType.uint64
+			parentId: ModelType.uint64HexIdentifier
 		});
 
-		builder.addSchema('mosaicNamesTuples', {
+		builder.addSchema('mosaicNames', {
 			mosaicNames: { type: ModelType.array, schemaName: 'mosaicNamesTuple' }
 		});
 
 		builder.addSchema('mosaicNamesTuple', {
-			mosaicId: ModelType.uint64,
+			mosaicId: ModelType.uint64HexIdentifier,
 			names: { type: ModelType.array, schemaName: ModelType.string }
 		});
 
-		builder.addSchema('accountNamesTuples', {
+		builder.addSchema('accountNames', {
 			accountNames: { type: ModelType.array, schemaName: 'accountNamesTuple' }
 		});
 
@@ -147,20 +148,19 @@ const namespacePlugin = {
 		codecBuilder.addTransactionSupport(EntityType.registerNamespace, {
 			deserialize: parser => {
 				const transaction = {};
-				transaction.namespaceType = parser.uint8();
-				transaction[isNamespaceTypeRoot(transaction.namespaceType) ? 'duration' : 'parentId'] = parser.uint64();
-				transaction.namespaceId = parser.uint64();
+				transaction.registrationType = parser.uint8();
+				transaction[isNamespaceTypeRoot(transaction.registrationType) ? 'duration' : 'parentId'] = parser.uint64();
+				transaction.id = parser.uint64();
 
-				const namespaceNameSize = parser.uint8();
-				transaction.name = parseString(parser, namespaceNameSize);
+				const nameSize = parser.uint8();
+				transaction.name = parseString(parser, nameSize);
 				return transaction;
 			},
 
 			serialize: (transaction, serializer) => {
-				serializer.writeUint8(transaction.namespaceType);
-				serializer.writeUint64(isNamespaceTypeRoot(transaction.namespaceType) ? transaction.duration : transaction.parentId);
-				serializer.writeUint64(transaction.namespaceId);
-
+				serializer.writeUint8(transaction.registrationType);
+				serializer.writeUint64(isNamespaceTypeRoot(transaction.registrationType) ? transaction.duration : transaction.parentId);
+				serializer.writeUint64(transaction.id);
 				serializer.writeUint8(transaction.name.length);
 				writeString(serializer, transaction.name);
 			}
